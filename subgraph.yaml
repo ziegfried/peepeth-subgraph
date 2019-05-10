@@ -1,0 +1,23 @@
+specVersion: 0.0.1
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum/contract
+    name: Contract
+    network: mainnet
+    source:
+      address: "0xfa28ec7198028438514b49a3cf353bca5541ce1d"
+      abi: Contract
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.2
+      language: wasm/assemblyscript
+      entities:
+        - PeepethEvent
+      abis:
+        - name: Contract
+          file: ./abis/Contract.json
+      callHandlers:
+        - function: createAccount(bytes16,string)
+          handler: handleCreateAccount
+      file: ./src/mapping.ts

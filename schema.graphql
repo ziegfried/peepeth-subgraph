@@ -1,0 +1,13 @@
+type PeepethEvent @entity {
+  id: ID!
+  test: String!
+}
+
+type PeepethAccount @entity {
+  id: ID!
+  name: String!
+  ipfsHash: String!
+  info: String
+  website: String
+  location: String
+}
