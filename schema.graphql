@@ -18,12 +18,14 @@ type Account @entity {
   updatedTimestamp: Int
 }
 
-type Debug @entity {
+type DebugEvent @entity {
   id: ID!
   from: Bytes!
   tx: Bytes!
   block: Int!
   timestamp: Int!
+  account: Account
+  account2: Account
   message: String
   fn: String
   ipfsHash: String

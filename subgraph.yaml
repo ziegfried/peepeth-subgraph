@@ -30,3 +30,23 @@ dataSources:
           handler: handleChangeName
         - function: transferAccount(address)
           handler: handleTransferAccount
+        - function: follow(address)
+          handler: handleFollow
+        - function: unFollow(address)
+          handler: handleUnfollow
+        - function: setIsActive(bool)
+          handler: handleSetActive
+        - function: reply(string)
+          handler: handleReply
+        - function: setNewAddress(address)
+          handler: handleNewAddress
+        - function: share(string)
+          handler: handleShare
+        - function: post(string)
+          handler: handlePost
+        - function: saveBatch(string)
+          handler: handleSaveBatch
+        - function: cashout()
+          handler: handleCashout
+        - function: transferOwnership(address)
+          handler: handleTransferOwnership
