@@ -1,4 +1,6 @@
 specVersion: 0.0.1
+description: Peepeth, the blockchain-powered social network
+repository: https://github.com/ziegfried/peepeth-subgraph
 schema:
   file: ./schema.graphql
 dataSources:
@@ -12,12 +14,19 @@ dataSources:
       kind: ethereum/events
       apiVersion: 0.0.2
       language: wasm/assemblyscript
+      file: ./src/mapping.ts
       entities:
-        - PeepethEvent
+        - Account
+        - Debug
       abis:
         - name: Contract
           file: ./abis/Contract.json
       callHandlers:
         - function: createAccount(bytes16,string)
           handler: handleCreateAccount
-      file: ./src/mapping.ts
+        - function: updateAccount(string)
+          handler: handleUpdateAccount
+        - function: changeName(bytes16)
+          handler: handleChangeName
+        - function: transferAccount(address)
+          handler: handleTransferAccount

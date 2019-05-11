@@ -1,13 +1,30 @@
-type PeepethEvent @entity {
-  id: ID!
-  test: String!
-}
-
-type PeepethAccount @entity {
+type Account @entity {
   id: ID!
   name: String!
   ipfsHash: String!
   info: String
   website: String
   location: String
+  realName: String
+  avatarUrl: String
+  backgroundUrl: String
+  messageToWorld: String
+
+  createdInBlock: Int!
+  createdInTx: Bytes!
+  createdTimestamp: Int!
+  updatedInBlock: Int
+  updatedInTx: Bytes
+  updatedTimestamp: Int
+}
+
+type Debug @entity {
+  id: ID!
+  from: Bytes!
+  tx: Bytes!
+  block: Int!
+  timestamp: Int!
+  message: String
+  fn: String
+  ipfsHash: String
 }
