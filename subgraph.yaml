@@ -24,29 +24,29 @@ dataSources:
       callHandlers:
         - function: createAccount(bytes16,string)
           handler: handleCreateAccount
-        - function: updateAccount(string)
-          handler: handleUpdateAccount
-        - function: changeName(bytes16)
-          handler: handleChangeName
+        # - function: updateAccount(string)
+        #   handler: handleUpdateAccount
+        # - function: changeName(bytes16)
+        #   handler: handleChangeName
         - function: transferAccount(address)
           handler: handleTransferAccount
-        - function: follow(address)
-          handler: handleFollow
-        - function: unFollow(address)
-          handler: handleUnfollow
-        - function: setIsActive(bool)
-          handler: handleSetActive
-        - function: reply(string)
-          handler: handleReply
-        - function: setNewAddress(address)
-          handler: handleNewAddress
+        # - function: follow(address)
+        #   handler: handleFollow
+        # - function: unFollow(address)
+        #   handler: handleUnfollow
         - function: share(string)
           handler: handleShare
         - function: post(string)
           handler: handlePost
-        - function: saveBatch(string)
-          handler: handleSaveBatch
-        - function: cashout()
-          handler: handleCashout
-        - function: transferOwnership(address)
-          handler: handleTransferOwnership
+        - function: reply(string)
+          handler: handleReply
+        # - function: saveBatch(string)
+        #   handler: handleSaveBatch
+        # - function: setIsActive(bool)
+        #   handler: handleSetActive
+        # - function: setNewAddress(address)
+        #   handler: handleNewAddress
+        # - function: cashout()
+        #   handler: handleCashout
+        # - function: transferOwnership(address)
+        #   handler: handleTransferOwnership

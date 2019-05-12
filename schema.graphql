@@ -1,5 +1,6 @@
 type Account @entity {
   id: ID!
+  number: Int!
   name: String!
   ipfsHash: String!
   info: String
@@ -10,12 +11,36 @@ type Account @entity {
   backgroundUrl: String
   messageToWorld: String
 
+  followers: [Account!]! @derivedFrom(field: "following")
+  following: [Account!]!
+
   createdInBlock: Int!
   createdInTx: Bytes!
   createdTimestamp: Int!
   updatedInBlock: Int
   updatedInTx: Bytes
   updatedTimestamp: Int
+}
+
+type Peep @entity {
+  id: ID!
+  content: String!
+  account: Account
+  timestamp: Int!
+
+  share: Peep
+  replyTo: Peep
+  replies: [Peep!]! @derivedFrom(field: "replyTo")
+
+  createdInBlock: Int!
+  createdInTx: Bytes!
+  createdTimestamp: Int!
+}
+
+type Peepeth @entity {
+  id: ID!
+  numberOfAccounts: Int!
+  numberOfPeeps: Int!
 }
 
 type DebugEvent @entity {

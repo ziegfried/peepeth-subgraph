@@ -7,6 +7,7 @@ import {
   TransferAccountCall,
   UpdateAccountCall,
 } from '../generated/Contract/Contract';
+import { getGlobalStats } from './peepeth';
 
 function loadAccountInfoFromIpfs(account: Account, ipfsHash: string): void {
   account.ipfsHash = ipfsHash;
@@ -47,6 +48,12 @@ export function handleCreateAccount(call: CreateAccountCall): void {
     account.name = '#INVALID#<' + call.inputs._name.toHexString() + '>';
   }
   loadAccountInfoFromIpfs(account, call.inputs._ipfsHash);
+
+  let globalStats = getGlobalStats();
+  globalStats.numberOfAccounts += 1;
+  globalStats.save();
+
+  account.number = globalStats.numberOfAccounts;
   account.save();
 }
 
