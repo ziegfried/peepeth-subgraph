@@ -11,8 +11,10 @@ type Account @entity {
   backgroundUrl: String
   messageToWorld: String
 
-  followers: [Account!]! @derivedFrom(field: "following")
-  following: [Account!]!
+  followers: [Follower!]! @derivedFrom(field: "followee")
+  following: [Follower!]! @derivedFrom(field: "account")
+
+  peeps: [Peep!]! @derivedFrom(field: "account")
 
   createdInBlock: Int!
   createdInTx: Bytes!
@@ -22,9 +24,29 @@ type Account @entity {
   updatedTimestamp: Int
 }
 
+type Follower @entity {
+  id: ID!
+  followee: Account!
+  account: Account!
+  timestamp: Int!
+
+  createdInBlock: Int!
+  createdInTx: Bytes!
+  createdTimestamp: Int!
+}
+
+enum PeepType {
+  PEEP
+  SHARE
+  REPLY
+}
+
 type Peep @entity {
   id: ID!
+  number: Int!
+  type: PeepType!
   content: String!
+  pic: String
   account: Account
   timestamp: Int!
 
@@ -41,6 +63,10 @@ type Peepeth @entity {
   id: ID!
   numberOfAccounts: Int!
   numberOfPeeps: Int!
+  """
+  Number of peeps where the data in IPFS could not be located
+  """
+  numberOfPeepsNotFound: Int!
 }
 
 type DebugEvent @entity {

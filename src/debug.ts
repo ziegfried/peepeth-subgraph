@@ -8,7 +8,7 @@ import {
 } from '../generated/Contract/Contract';
 import { Account, DebugEvent } from '../generated/schema';
 
-function createDebugEvent(
+export function createDebugEvent(
   call: EthereumCall,
   fn: string,
   message: string | null,

@@ -24,16 +24,16 @@ dataSources:
       callHandlers:
         - function: createAccount(bytes16,string)
           handler: handleCreateAccount
-        # - function: updateAccount(string)
-        #   handler: handleUpdateAccount
+        - function: updateAccount(string)
+          handler: handleUpdateAccount
         # - function: changeName(bytes16)
         #   handler: handleChangeName
         - function: transferAccount(address)
           handler: handleTransferAccount
-        # - function: follow(address)
-        #   handler: handleFollow
-        # - function: unFollow(address)
-        #   handler: handleUnfollow
+        - function: follow(address)
+          handler: handleFollow
+        - function: unFollow(address)
+          handler: handleUnfollow
         - function: share(string)
           handler: handleShare
         - function: post(string)

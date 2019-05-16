@@ -42,11 +42,14 @@ function applyAccountUpdateInfo(account: Account, call: EthereumCall): void {
 export function handleCreateAccount(call: CreateAccountCall): void {
   let account = new Account(call.transaction.from.toHex());
   applyAccountCreationInfo(account, call);
+
+  // Check if name is valid UTF-8 string, since subgraph fails otherwise
   if (isValidUtf8(call.inputs._name)) {
     account.name = call.inputs._name.toString();
   } else {
     account.name = '#INVALID#<' + call.inputs._name.toHexString() + '>';
   }
+
   loadAccountInfoFromIpfs(account, call.inputs._ipfsHash);
 
   let globalStats = getGlobalStats();

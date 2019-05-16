@@ -7,6 +7,7 @@ export function getGlobalStats(): Peepeth {
     peepeth = new Peepeth(global);
     peepeth.numberOfAccounts = 0;
     peepeth.numberOfPeeps = 0;
+    peepeth.numberOfPeepsNotFound = 0;
   }
   return peepeth!;
 }
