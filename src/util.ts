@@ -1,21 +1,23 @@
 /// <reference path="./asm.d.ts" />
-import { TypedMap, JSONValue, Bytes, JSONValueKind, ipfs, json } from '@graphprotocol/graph-ts';
+import { Bytes, JSONValue, JSONValueKind, TypedMap } from '@graphprotocol/graph-ts';
 
-export function loadFromIpfs(ifpsHash: string): TypedMap<string, JSONValue> | null {
-  let bytes = ipfs.cat(ifpsHash);
-  if (bytes !== null) {
-    let data = json.fromBytes(bytes!);
-    if (data !== null && data.kind === JSONValueKind.OBJECT) {
-      return data.toObject();
-    }
+export function asString(val: JSONValue | null): string | null {
+  if (val != null && val.kind === JSONValueKind.STRING) {
+    return val.toString();
   }
   return null;
 }
 
-export function stringValueOrNull(obj: TypedMap<string, JSONValue>, key: string): string | null {
-  let val = obj.get(key);
-  if (val != null && val.kind === JSONValueKind.STRING) {
-    return val.toString();
+export function asObject(val: JSONValue | null): TypedMap<string, JSONValue> | null {
+  if (val != null && val.kind === JSONValueKind.OBJECT) {
+    return val.toObject();
+  }
+  return null;
+}
+
+export function asArray(val: JSONValue | null): Array<JSONValue> | null {
+  if (val != null && val.kind === JSONValueKind.ARRAY) {
+    return val.toArray();
   }
   return null;
 }

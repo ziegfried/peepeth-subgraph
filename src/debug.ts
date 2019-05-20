@@ -1,56 +1,31 @@
-import { Address, EthereumCall } from '@graphprotocol/graph-ts';
 import {
   CashoutCall,
-  ReplyCall,
   SetIsActiveCall,
   SetNewAddressCall,
   TransferOwnershipCall,
 } from '../generated/Contract/Contract';
-import { Account, DebugEvent } from '../generated/schema';
-
-export function createDebugEvent(
-  call: EthereumCall,
-  fn: string,
-  message: string | null,
-  ipfsHash: string | null,
-  account2: Address | null
-): void {
-  let evt = new DebugEvent(call.transaction.hash.toHex());
-  evt.fn = fn;
-  evt.block = call.block.number.toI32();
-  evt.tx = call.transaction.hash;
-  evt.from = call.transaction.from;
-  evt.timestamp = call.block.timestamp.toI32();
-
-  evt.message = message;
-  evt.ipfsHash = ipfsHash;
-
-  let fromAccount = Account.load(call.transaction.from.toHex());
-  if (fromAccount !== null) {
-    evt.account = call.transaction.from.toHex();
-  }
-  if (account2 != null) {
-    let toAccount = Account.load(account2.toHex());
-    if (toAccount !== null) {
-      evt.account2 = toAccount.id;
-    }
-  }
-
-  evt.save();
-}
 
 export function handleSetActive(call: SetIsActiveCall): void {
-  createDebugEvent(call, 'setActive', call.inputs._isActive ? '(true)' : '(false)', null, null);
+  // log.debug('Function call to setActive(isActive={}) in tx={}', [
+  //   call.inputs._isActive ? 'true' : 'false',
+  //   call.transaction.hash.toHex(),
+  // ]);
 }
 
 export function handleNewAddress(call: SetNewAddressCall): void {
-  createDebugEvent(call, 'newAddress', call.inputs._address.toHex(), null, null);
+  // log.debug('Function call to newAddress(address={}) in tx={}', [
+  //   call.inputs._address.toHex(),
+  //   call.transaction.hash.toHex(),
+  // ]);
 }
 
 export function handleCashout(call: CashoutCall): void {
-  createDebugEvent(call, 'cashout', null, null, null);
+  // log.debug('Function call to cashout() in tx={}', [call.transaction.hash.toHex()]);
 }
 
 export function handleTransferOwnership(call: TransferOwnershipCall): void {
-  createDebugEvent(call, 'transferOwnership', null, null, call.inputs.newOwner);
+  // log.debug('Function call to transferOwnership(newOwner={}) in tx={}', [
+  //   call.inputs.newOwner.toHex(),
+  //   call.transaction.hash.toHex(),
+  // ]);
 }

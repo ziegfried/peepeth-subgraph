@@ -1,23 +1,31 @@
 /// <reference path="./asm.d.ts" />
+import { store } from '@graphprotocol/graph-ts';
 import { FollowCall, UnFollowCall } from '../generated/Contract/Contract';
 import { Follower } from '../generated/schema';
-import { EthereumCall } from '@graphprotocol/graph-ts';
+import { TransactionInfo } from './transaction';
+
+function followerId(accountAddress: string, followeeAddress: string): string {
+  return accountAddress + '-' + followeeAddress;
+}
 
 export function addNewFollower(
   accountAddress: string,
   followeeAddress: string,
   timestamp: i32,
-  call: EthereumCall
+  tx: TransactionInfo
 ): void {
-  let id = accountAddress + '-' + followeeAddress;
-  let f = new Follower(id);
+  let f = new Follower(followerId(accountAddress, followeeAddress));
   f.account = accountAddress;
   f.followee = followeeAddress;
   f.timestamp = timestamp;
-  f.createdTimestamp = call.block.timestamp.toI32();
-  f.createdInBlock = call.block.number.toI32();
-  f.createdInTx = call.transaction.hash;
+  f.createdTimestamp = tx.timestamp;
+  f.createdInBlock = tx.blockNumber;
+  f.createdInTx = tx.hash;
   f.save();
+}
+
+export function removeFollower(accountAddress: string, followeeAddress: string): void {
+  store.remove('Follower', followerId(accountAddress, followeeAddress));
 }
 
 export function handleFollow(call: FollowCall): void {
@@ -25,11 +33,10 @@ export function handleFollow(call: FollowCall): void {
     call.transaction.from.toHex(),
     call.inputs._followee.toHex(),
     call.block.timestamp.toI32(),
-    call
+    TransactionInfo.fromEthereumCall(call)
   );
 }
 
 export function handleUnfollow(call: UnFollowCall): void {
-  // TODO
-  // createDebugEvent(call, 'unfollow', null, null, call.inputs._followee);
+  removeFollower(call.transaction.from.toHex(), call.inputs._followee.toHex());
 }

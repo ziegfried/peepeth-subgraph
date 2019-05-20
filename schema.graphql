@@ -59,25 +59,24 @@ type Peep @entity {
   createdTimestamp: Int!
 }
 
+"""
+Global stats about Peepeth, use Peepeth(id: "global")
+"""
 type Peepeth @entity {
+  """
+  There is only one entry with `id: "global"`
+  """
   id: ID!
+  """
+  Total number of Peepeth accounts
+  """
   numberOfAccounts: Int!
+  """
+  Total number of peeps
+  """
   numberOfPeeps: Int!
   """
   Number of peeps where the data in IPFS could not be located
   """
   numberOfPeepsNotFound: Int!
-}
-
-type DebugEvent @entity {
-  id: ID!
-  from: Bytes!
-  tx: Bytes!
-  block: Int!
-  timestamp: Int!
-  account: Account
-  account2: Account
-  message: String
-  fn: String
-  ipfsHash: String
 }

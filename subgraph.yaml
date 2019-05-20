@@ -5,11 +5,11 @@ schema:
   file: ./schema.graphql
 dataSources:
   - kind: ethereum/contract
-    name: Contract
+    name: PeepethContract
     network: mainnet
     source:
       address: "0xfa28ec7198028438514b49a3cf353bca5541ce1d"
-      abi: Contract
+      abi: PeepethContract
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.2
@@ -19,7 +19,7 @@ dataSources:
         - Account
         - Debug
       abis:
-        - name: Contract
+        - name: PeepethContract
           file: ./abis/Contract.json
       callHandlers:
         - function: createAccount(bytes16,string)
@@ -40,8 +40,8 @@ dataSources:
           handler: handlePost
         - function: reply(string)
           handler: handleReply
-        # - function: saveBatch(string)
-        #   handler: handleSaveBatch
+        - function: saveBatch(string)
+          handler: handleSaveBatch
         # - function: setIsActive(bool)
         #   handler: handleSetActive
         # - function: setNewAddress(address)

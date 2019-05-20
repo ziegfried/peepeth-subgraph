@@ -1,10 +1,11 @@
 /// <reference path="./asm.d.ts" />
-import { EthereumCall, JSONValue, TypedMap, ipfs, json, JSONValueKind } from '@graphprotocol/graph-ts';
+import { JSONValue, log, TypedMap } from '@graphprotocol/graph-ts';
 import { PostCall, ReplyCall, ShareCall } from '../generated/Contract/Contract';
-import { getGlobalStats } from './peepeth';
-import { stringValueOrNull, intValue, loadFromIpfs } from './util';
-import { createDebugEvent } from './debug';
 import { Peep } from '../generated/schema';
+import { getGlobalStats } from './global';
+import { asString, intValue } from './util';
+import { TransactionInfo } from './transaction';
+import { loadFromIpfs } from './ipfs';
 
 function incrementNumberOfPeeps(): i32 {
   let global = getGlobalStats();
@@ -13,84 +14,72 @@ function incrementNumberOfPeeps(): i32 {
   return global.numberOfPeeps;
 }
 
-function applyPeepCreationInfo(account: Peep, call: EthereumCall): void {
-  account.createdInBlock = call.block.number.toI32();
-  account.createdInTx = call.transaction.hash;
-  account.createdTimestamp = call.block.timestamp.toI32();
+function applyPeepCreationInfo(account: Peep, tx: TransactionInfo): void {
+  account.createdInBlock = tx.blockNumber;
+  account.createdInTx = tx.hash;
+  account.createdTimestamp = tx.timestamp;
 }
 
-enum PeepType {
-  PEEP,
-  SHARE,
-  REPLY,
-}
-
-export function createPeep(data: TypedMap<string, JSONValue>, id: string, call: EthereumCall): Peep | null {
+export function createPeep(data: TypedMap<string, JSONValue>, id: string, tx: TransactionInfo): Peep | null {
   let peepType = 'peep';
 
-  let type = stringValueOrNull(data, 'type');
+  let type = asString(data.get('type'));
   if (type == peepType) {
     let peep = new Peep(id);
     peep.number = incrementNumberOfPeeps();
-    peep.account = call.transaction.from.toHex();
-    peep.content = stringValueOrNull(data, 'content');
-    peep.pic = stringValueOrNull(data, 'pic');
+    peep.account = tx.from.toHex();
+    peep.content = asString(data.get('content'));
+    peep.pic = asString(data.get('pic'));
     peep.timestamp = intValue(data, 'untrustedTimestamp', 0);
     peep.type = 'PEEP';
 
-    let shareKey = 'shareID';
-    if (data.isSet(shareKey)) {
-      peep.share = stringValueOrNull(data, shareKey);
+    let shareId = asString(data.get('shareID'));
+    if (shareId != null) {
+      peep.share = shareId;
       peep.type = 'SHARE';
     }
 
-    let replyKey = 'parentID';
-    if (data.isSet(replyKey)) {
-      peep.replyTo = stringValueOrNull(data, replyKey);
+    let replyId = asString(data.get('parentID'));
+    if (replyId != null) {
+      peep.replyTo = replyId;
       peep.type = 'REPLY';
     }
 
-    applyPeepCreationInfo(peep, call);
+    applyPeepCreationInfo(peep, tx);
     return peep;
   } else {
-    let msg = 'Invalid peep data with type=' + type;
-    createDebugEvent(call, 'savePeep', msg, id, null);
+    log.warning('[mapping] Ignoring invalid peep of type={} in tx={}', [type, tx.hash.toHex()]);
   }
   return null;
 }
 
-export function handlePost(call: PostCall): void {
-  let data = loadFromIpfs(call.inputs._ipfsHash);
+export function createPeepFromIPFS(ipfsHash: string, fn: string, tx: TransactionInfo): void {
+  let data = loadFromIpfs(ipfsHash);
   if (data !== null) {
-    let peep = createPeep(data!, call.inputs._ipfsHash, call);
+    let peep = createPeep(data!, ipfsHash, tx);
     if (peep !== null) {
       peep.save();
     }
   } else {
-    createDebugEvent(call, 'handlePost', 'Peep data is null', call.inputs._ipfsHash, null);
+    // log.warning('[mapping] Unable to load data from IPFS hash={} fn={} tx={}', [
+    //   ipfsHash,
+    //   fn,f
+    //   call.transaction.hash.toHex(),
+    // ]);
+    let globals = getGlobalStats();
+    globals.numberOfPeepsNotFound += 1;
+    globals.save();
   }
+}
+
+export function handlePost(call: PostCall): void {
+  createPeepFromIPFS(call.inputs._ipfsHash, 'post', TransactionInfo.fromEthereumCall(call));
 }
 
 export function handleShare(call: ShareCall): void {
-  let data = loadFromIpfs(call.inputs._ipfsHash);
-  if (data !== null) {
-    let peep = createPeep(data!, call.inputs._ipfsHash, call);
-    if (peep !== null) {
-      peep.save();
-    }
-  } else {
-    createDebugEvent(call, 'handleShare', 'Peep data is null', call.inputs._ipfsHash, null);
-  }
+  createPeepFromIPFS(call.inputs._ipfsHash, 'share', TransactionInfo.fromEthereumCall(call));
 }
 
 export function handleReply(call: ReplyCall): void {
-  let data = loadFromIpfs(call.inputs._ipfsHash);
-  if (data !== null) {
-    let peep = createPeep(data!, call.inputs._ipfsHash, call);
-    if (peep !== null) {
-      peep.save();
-    }
-  } else {
-    createDebugEvent(call, 'handleReply', 'Peep data is null', call.inputs._ipfsHash, null);
-  }
+  createPeepFromIPFS(call.inputs._ipfsHash, 'reply', TransactionInfo.fromEthereumCall(call));
 }
