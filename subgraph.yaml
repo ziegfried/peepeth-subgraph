@@ -17,7 +17,9 @@ dataSources:
       file: ./src/mapping.ts
       entities:
         - Account
-        - Debug
+        - Follower
+        - Peep
+        - Peepeth
       abis:
         - name: PeepethContract
           file: ./abis/Contract.json
