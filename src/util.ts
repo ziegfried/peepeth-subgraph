@@ -1,5 +1,5 @@
 /// <reference path="./asm.d.ts" />
-import { Bytes, JSONValue, JSONValueKind, TypedMap } from '@graphprotocol/graph-ts';
+import { ByteArray, Bytes, JSONValue, JSONValueKind, TypedMap } from '@graphprotocol/graph-ts';
 
 export function asString(val: JSONValue | null): string | null {
   if (val != null && val.kind === JSONValueKind.STRING) {
@@ -55,4 +55,15 @@ export function isValidUtf8(bytes: Bytes): boolean {
     pending -= 1;
   }
   return pending === 0;
+}
+
+export function stringToUft8Bytes(str: UTF8String): ByteArray {
+  let ptr = str.fromUTF8();
+  let len = str.lengthUTF8;
+
+  let bytes = new ByteArray(len);
+  for (let i = 0; i < len; i++) {
+    bytes[i] = load<u8>(ptr, i);
+  }
+  return bytes;
 }

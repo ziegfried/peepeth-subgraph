@@ -8,3 +8,11 @@ type u32 = number;
 type i64 = number;
 type u64 = number;
 type f64 = number;
+type usize = number;
+
+declare function load<T>(ptr: usize, pos: usize): T;
+
+interface UTF8String extends String {
+  fromUTF8(): usize;
+  lengthUTF8: usize;
+}
