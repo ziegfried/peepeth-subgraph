@@ -54,18 +54,18 @@ export function createPeep(data: TypedMap<string, JSONValue>, id: string, tx: Tr
 }
 
 export function createPeepFromIPFS(ipfsHash: string, fn: string, tx: TransactionInfo): void {
-  let data = loadFromIpfs(ipfsHash);
+  let data = loadFromIpfs(ipfsHash, tx);
   if (data !== null) {
     let peep = createPeep(data!, ipfsHash, tx);
     if (peep !== null) {
       peep.save();
     }
   } else {
-    // log.warning('[mapping] Unable to load data from IPFS hash={} fn={} tx={}', [
-    //   ipfsHash,
-    //   fn,f
-    //   call.transaction.hash.toHex(),
-    // ]);
+    log.warning('[mapping] [createPeepFromIPFS] Unable to load data from IPFS hash={} fn={} tx={}', [
+      ipfsHash,
+      fn,
+      tx.toString(),
+    ]);
     let globals = getGlobalStats();
     globals.numberOfPeepsNotFound += 1;
     globals.save();

@@ -28,7 +28,12 @@ function assumeSignedSender(
 ): TransactionInfo | null {
   let address = asString(signedObject.get('address'));
   let signature = asString(signedObject.get('signature'));
-  log.info('[findme5] user signed object ipfs={} address={} signature={}', [ipfsHash, address, signature]);
+  log.info('[mapping] [assumeSigned] user signed object ipfs={} address={} signature={} in {}', [
+    ipfsHash,
+    address,
+    signature,
+    tx.toString(),
+  ]);
 
   let from = Address.fromString(address!);
   // Verify ipfs hash has been signed by account owner
@@ -106,7 +111,7 @@ function processAccountUpdate(batchObj: TypedMap<string, JSONValue> | null, tx: 
 function processLove(batchObj: TypedMap<string, JSONValue> | null, tx: TransactionInfo): boolean {
   let loveObj = asObject(batchObj.get(KEY_LOVE));
   if (loveObj != null) {
-    // logObjectKeys('love obj key={}', loveObj!, '');
+    // ignore for now, TODO
     return true;
   }
   return false;
@@ -121,13 +126,16 @@ function processBatchItem(batchObj: TypedMap<string, JSONValue>, tx: Transaction
     processAccountUpdate(batchObj, tx);
 
   if (!processed) {
-    log.warning('[findme3] Unhandled batch obj keys={}', [objectKeys(batchObj!)]);
+    log.warning('[mapping] [batchItem] Unhandled batch obj keys={} in {}', [
+      objectKeys(batchObj!),
+      tx.toString(),
+    ]);
   }
 
   return processed;
 }
 
-function processBatch(data: TypedMap<string, JSONValue>, tx: TransactionInfo): boolean {
+function processBatchJSON(data: TypedMap<string, JSONValue>, tx: TransactionInfo): boolean {
   let batchData = asArray(data.get(KEY_BATCH_SAVE_JSON));
   if (batchData != null) {
     for (let i = 0, len = batchData.length; i < len; i++) {
@@ -135,8 +143,9 @@ function processBatch(data: TypedMap<string, JSONValue>, tx: TransactionInfo): b
       if (batchObj != null) {
         processBatchItem(batchObj!, tx);
       } else {
-        log.warning('[findme3] Batch entry is not an object instead saw kind={}', [
+        log.warning('[mapping] [batchItem] Batch entry is not an object instead saw kind={} in {}', [
           batchData![i].kind.toString(),
+          tx.toString(),
         ]);
       }
     }
@@ -153,7 +162,7 @@ function processUserSignedBatch(data: TypedMap<string, JSONValue>, tx: Transacti
     if (ipfsHash != null) {
       let txInfo = assumeSignedSender(signedBatch!, ipfsHash, tx);
       if (txInfo != null) {
-        processAnyBatch(ipfsHash, txInfo!);
+        processBatch(ipfsHash, txInfo!);
       }
     }
     return true;
@@ -169,7 +178,10 @@ function processSignedActions(data: TypedMap<string, JSONValue>, tx: Transaction
       if (obj != null) {
         let processed = processUserSignedBatch(obj!, tx) || processPeep(obj, tx, true);
         if (!processed) {
-          log.warning('[findme6] Unable to process signed action with keys={}', [objectKeys(obj!)]);
+          log.warning('[mapping] [signedAction] Unable to process signed action with keys={} in {}', [
+            objectKeys(obj!),
+            tx.toString(),
+          ]);
         }
       }
     }
@@ -189,20 +201,23 @@ function objectKeys(obj: TypedMap<string, JSONValue>): string {
   return result;
 }
 
-function processAnyBatch(ipfsHash: string, tx: TransactionInfo): void {
-  let data = loadFromIpfs(ipfsHash);
+function processBatch(ipfsHash: string, tx: TransactionInfo): void {
+  let data = loadFromIpfs(ipfsHash, tx);
   if (data != null) {
-    let processed = processBatch(data!, tx) || processSignedActions(data!, tx);
+    let processed = processBatchJSON(data!, tx) || processSignedActions(data!, tx);
     if (!processed) {
-      // log.warning('[findme2] Did not find batch data in saveBatch JSON blob (keys={})', [objectKeys(data)]);
+      log.warning('[mapping] [batchHandler] Did not find batch data in saveBatch JSON blob (keys={}) in {}', [
+        objectKeys(data!),
+        tx.toString(),
+      ]);
     }
-  } else {
-    // log.warning('[mapping] Unable to load batch JSON from ipfs hash={}', [call.inputs._ipfsHash]);
   }
 }
 
 export function handleSaveBatch(call: SaveBatchCall): void {
   let ipfsHash = call.inputs._ipfsHash;
   let tx = TransactionInfo.fromEthereumCall(call);
-  processAnyBatch(ipfsHash, tx);
+  log.debug('[mapping] [batchHandler] Processing batch from {} ipfs hash={}', [tx.toString(), ipfsHash]);
+  processBatch(ipfsHash, tx);
+  log.debug('[mapping] [batchHandler] Completed batch from {} ipfs hash={}', [tx.toString(), ipfsHash]);
 }

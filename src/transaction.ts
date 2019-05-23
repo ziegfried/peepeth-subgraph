@@ -1,10 +1,15 @@
 import { Bytes, Address, EthereumCall, Value } from '@graphprotocol/graph-ts';
 
+export class State {
+  ipfsReqs: i32 = 0;
+}
+
 export class TransactionInfo {
   blockNumber: i32;
   timestamp: i32;
   from: Address;
   hash: Bytes;
+  state: State;
 
   static fromEthereumCall(call: EthereumCall): TransactionInfo {
     let info = new TransactionInfo();
@@ -12,6 +17,7 @@ export class TransactionInfo {
     info.timestamp = call.block.timestamp.toI32();
     info.hash = call.transaction.hash;
     info.from = call.transaction.from;
+    info.state = new State();
     return info;
   }
 
@@ -35,6 +41,16 @@ export class TransactionInfo {
   }
 
   clone(): TransactionInfo {
-    return TransactionInfo.fromValue(this.toValue());
+    let cloned = TransactionInfo.fromValue(this.toValue());
+    cloned.state = this.state;
+    return cloned;
+  }
+
+  toString(): string {
+    let res = 'tx=';
+    res += this.hash.toHex();
+    res += ', ipfsReqs=';
+    res += this.state.ipfsReqs.toString();
+    return res;
   }
 }

@@ -13,7 +13,7 @@ import {
 
 function loadAccountInfoFromIpfs(account: Account, ipfsHash: string, tx: TransactionInfo): void {
   account.ipfsHash = ipfsHash;
-  let infoObj = loadFromIpfs(ipfsHash);
+  let infoObj = loadFromIpfs(ipfsHash, tx);
   if (infoObj !== null) {
     account.info = asString(infoObj.get('info'));
     account.location = asString(infoObj.get('location'));
