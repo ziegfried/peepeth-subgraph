@@ -9,6 +9,8 @@ import { TransactionInfo } from './transaction';
  */
 export function loadFromIpfs(ifpsHash: string, tx: TransactionInfo): TypedMap<string, JSONValue> | null {
   if (tx.state.ipfsReqs > 7) {
+    // Workaround to avoid the subgraph from failing when a call handler takes > 180s
+    // See https://github.com/graphprotocol/graph-node/issues/963
     log.warning(
       '[mapping] [loadIpfs] Too many IPFS requests while processing this transaction {}, skipping fetching hash={}',
       [tx.toString(), ifpsHash]
