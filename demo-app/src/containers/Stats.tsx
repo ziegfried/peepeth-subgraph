@@ -19,13 +19,13 @@ const Stats: React.FC = () => {
   }
 
   if (error) {
-    return <strong>ERROR: {error}</strong>;
+    return <strong>ERROR: {error.message}</strong>;
   }
 
   const { numberOfPeeps, numberOfAccounts } = data.peepeth;
   return (
     <div>
-      Got {numberOfPeeps} peeps by {numberOfAccounts} accounts
+      <strong>{numberOfPeeps}</strong> peeps by <strong>{numberOfAccounts}</strong> accounts
     </div>
   );
 };
