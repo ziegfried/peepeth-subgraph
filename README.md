@@ -37,6 +37,14 @@ This [subgraph](https://thegraph.com/explorer/subgraph/ziegfried/peepeth) source
 }
 ```
 
+## Demo App
+
+...
+
+<div align="center">
+    <img src="./demo-app/screenshot.png" width="400px"</img> 
+</div>
+
 ## How Peepeth works
 
 For a high-level overview see [https://peepeth.com/how](https://peepeth.com/how).
