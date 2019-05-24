@@ -8,7 +8,7 @@ dataSources:
     name: PeepethContract
     network: mainnet
     source:
-      address: "0xfa28ec7198028438514b49a3cf353bca5541ce1d"
+      address: '0xfa28ec7198028438514b49a3cf353bca5541ce1d'
       abi: PeepethContract
     mapping:
       kind: ethereum/events
@@ -28,6 +28,9 @@ dataSources:
           handler: handleCreateAccount
         - function: updateAccount(string)
           handler: handleUpdateAccount
+        # Disabled the changeName call handler for now since there are some
+        # invalid transactions on mainnet that cause the subgraph to crash
+        # See https://github.com/graphprotocol/graph-node/issues/932
         # - function: changeName(bytes16)
         #   handler: handleChangeName
         - function: transferAccount(address)
@@ -44,11 +47,3 @@ dataSources:
           handler: handleReply
         - function: saveBatch(string)
           handler: handleSaveBatch
-        # - function: setIsActive(bool)
-        #   handler: handleSetActive
-        # - function: setNewAddress(address)
-        #   handler: handleNewAddress
-        # - function: cashout()
-        #   handler: handleCashout
-        # - function: transferOwnership(address)
-        #   handler: handleTransferOwnership

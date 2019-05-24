@@ -1,9 +1,17 @@
+/// <reference path="./asm.d.ts" />
 import { Bytes, Address, EthereumCall, Value } from '@graphprotocol/graph-ts';
 
+/**
+ * Some state information to keep track while processing a transaction
+ */
 export class State {
+  /** Number of IPFS.cat calls made so far */
   ipfsReqs: i32 = 0;
 }
 
+/**
+ * Stores some specific information about an ethereum transaction
+ */
 export class TransactionInfo {
   blockNumber: i32;
   timestamp: i32;
@@ -11,6 +19,7 @@ export class TransactionInfo {
   hash: Bytes;
   state: State;
 
+  /** Extract transaction info from an ethereum call */
   static fromEthereumCall(call: EthereumCall): TransactionInfo {
     let info = new TransactionInfo();
     info.blockNumber = call.block.number.toI32();
@@ -21,6 +30,7 @@ export class TransactionInfo {
     return info;
   }
 
+  /** Restore transaction info from value */
   static fromValue(value: Value): TransactionInfo {
     let arr = value.toArray();
     let info = new TransactionInfo();
@@ -31,6 +41,10 @@ export class TransactionInfo {
     return info;
   }
 
+  /**
+   * Store transaction info in a Value, which can be passed
+   * around in ipfs.map/mapJSON async calls
+   */
   toValue(): Value {
     let timestamp = Value.fromI32(this.timestamp);
     let block = Value.fromI32(this.blockNumber);
@@ -40,8 +54,10 @@ export class TransactionInfo {
     return encoded;
   }
 
+  /** Clone the transaction, but keep the original state field */
   clone(): TransactionInfo {
     let cloned = TransactionInfo.fromValue(this.toValue());
+    // Keep the original state reference.
     cloned.state = this.state;
     return cloned;
   }

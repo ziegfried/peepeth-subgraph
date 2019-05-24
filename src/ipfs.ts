@@ -3,6 +3,10 @@ import { ipfs, json, JSONValue, JSONValueKind, log, TypedMap } from '@graphproto
 import { asObject } from './util';
 import { TransactionInfo } from './transaction';
 
+/**
+ * Loads a JSON blob from IPFS, parses the JSON and makes sure the JSON is a valid JSON object.
+ * Returns `null` otherwise.
+ */
 export function loadFromIpfs(ifpsHash: string, tx: TransactionInfo): TypedMap<string, JSONValue> | null {
   if (tx.state.ipfsReqs > 7) {
     log.warning(

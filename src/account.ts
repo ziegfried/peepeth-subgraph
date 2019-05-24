@@ -11,6 +11,9 @@ import {
   UpdateAccountCall,
 } from '../generated/Contract/Contract';
 
+/**
+ * Loads account information from IPFS and applies it to the given account instance
+ */
 function loadAccountInfoFromIpfs(account: Account, ipfsHash: string, tx: TransactionInfo): void {
   account.ipfsHash = ipfsHash;
   let infoObj = loadFromIpfs(ipfsHash, tx);
@@ -39,6 +42,10 @@ function applyAccountUpdateInfo(account: Account, tx: TransactionInfo): void {
   account.updatedTimestamp = tx.timestamp;
 }
 
+/**
+ * Attempts to update the account with the informatin from IPFS.
+ * If the account doesn't exist, a new Account instance is created.
+ */
 export function updateAccount(id: string, tx: TransactionInfo, ipfsHash: string): void {
   let account = Account.load(id);
   if (account === null) {
@@ -51,6 +58,7 @@ export function updateAccount(id: string, tx: TransactionInfo, ipfsHash: string)
   account.save();
 }
 
+/** Handler function for `createAccount(bytes16, string)` calls */
 export function handleCreateAccount(call: CreateAccountCall): void {
   let account = new Account(call.transaction.from.toHex());
   let txInfo = TransactionInfo.fromEthereumCall(call);
@@ -73,11 +81,16 @@ export function handleCreateAccount(call: CreateAccountCall): void {
   account.save();
 }
 
+/** Handler function for `updateAccount(string)` calls */
 export function handleUpdateAccount(call: UpdateAccountCall): void {
   let txInfo = TransactionInfo.fromEthereumCall(call);
   updateAccount(call.transaction.from.toHex(), txInfo, call.inputs._ipfsHash);
 }
 
+/**
+ * Handler function for `changeName(bytes16)` calls. This is currently not
+ * wired up, see subgraph.yaml
+ */
 export function handleChangeName(call: ChangeNameCall): void {
   let from = call.transaction.from.toHex();
   let account = Account.load(from);
@@ -93,6 +106,11 @@ export function handleChangeName(call: ChangeNameCall): void {
   account.save();
 }
 
+/**
+ * Handler function for `transferAccount(address)` calls. This function
+ * creates a new account (with `from` of this transaction), copies
+ * all the info from the old account and deletes the original account instance.
+ */
 export function handleTransferAccount(call: TransferAccountCall): void {
   let id = call.transaction.hash.toHex();
   let tx = TransactionInfo.fromEthereumCall(call);

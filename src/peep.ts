@@ -7,6 +7,10 @@ import { asString, intValue } from './util';
 import { TransactionInfo } from './transaction';
 import { loadFromIpfs } from './ipfs';
 
+/**
+ * Increase global counter of peeps by 1 and returns that
+ * incremented value.
+ */
 function incrementNumberOfPeeps(): i32 {
   let global = getGlobalStats();
   global.numberOfPeeps += 1;
@@ -14,12 +18,7 @@ function incrementNumberOfPeeps(): i32 {
   return global.numberOfPeeps;
 }
 
-function applyPeepCreationInfo(account: Peep, tx: TransactionInfo): void {
-  account.createdInBlock = tx.blockNumber;
-  account.createdInTx = tx.hash;
-  account.createdTimestamp = tx.timestamp;
-}
-
+/** Creates and stores a new Peep instance from the information in JSON object */
 export function createPeep(data: TypedMap<string, JSONValue>, id: string, tx: TransactionInfo): Peep | null {
   let peepType = 'peep';
 
@@ -45,7 +44,10 @@ export function createPeep(data: TypedMap<string, JSONValue>, id: string, tx: Tr
       peep.type = 'REPLY';
     }
 
-    applyPeepCreationInfo(peep, tx);
+    peep.createdInBlock = tx.blockNumber;
+    peep.createdInTx = tx.hash;
+    peep.createdTimestamp = tx.timestamp;
+
     return peep;
   } else {
     log.warning('[mapping] Ignoring invalid peep of type={} in tx={}', [type, tx.hash.toHex()]);
@@ -53,6 +55,10 @@ export function createPeep(data: TypedMap<string, JSONValue>, id: string, tx: Tr
   return null;
 }
 
+/**
+ * Downloads the JSON blob from IPFS, makes sure it contains peep data
+ * and creates a new peep record in the store
+ */
 export function createPeepFromIPFS(ipfsHash: string, fn: string, tx: TransactionInfo): void {
   let data = loadFromIpfs(ipfsHash, tx);
   if (data !== null) {
@@ -72,14 +78,17 @@ export function createPeepFromIPFS(ipfsHash: string, fn: string, tx: Transaction
   }
 }
 
+/** Handler function for `post(string)` */
 export function handlePost(call: PostCall): void {
   createPeepFromIPFS(call.inputs._ipfsHash, 'post', TransactionInfo.fromEthereumCall(call));
 }
 
+/** Handler function for share(string) */
 export function handleShare(call: ShareCall): void {
   createPeepFromIPFS(call.inputs._ipfsHash, 'share', TransactionInfo.fromEthereumCall(call));
 }
 
+/** Handler function for reply(string) */
 export function handleReply(call: ReplyCall): void {
   createPeepFromIPFS(call.inputs._ipfsHash, 'reply', TransactionInfo.fromEthereumCall(call));
 }

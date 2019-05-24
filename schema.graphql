@@ -1,61 +1,249 @@
+"""
+An account is a peepeth user, bound to an ethereum wallet
+"""
 type Account @entity {
+  """
+  The account ID is the ethereum wallet address of the user
+  """
   id: ID!
+
+  """
+  Accounts are numbered in the order they were created
+  """
   number: Int!
+
+  """
+  The username
+  """
   name: String!
+
+  """
+  IPFS of the account info
+  """
   ipfsHash: String!
+
+  """
+  Tagline of the user
+  """
   info: String
+
+  """
+  The users website
+  """
   website: String
+
+  """
+  Geographical location of the user (not in a particular format)
+  """
   location: String
+
+  """
+  The users real name
+  """
   realName: String
+
+  """
+  User avatar image
+  """
   avatarUrl: String
+
+  """
+  User background image
+  """
   backgroundUrl: String
+
+  """
+  Shout it out there
+  """
   messageToWorld: String
 
+  """
+  List of followers of this user, for example
+
+  ```
+  followers {
+    account {
+      name
+    }
+  }
+  """
   followers: [Follower!]! @derivedFrom(field: "followee")
+  """
+  List of peepeth this account is following, for example
+
+  ```
+  following {
+    followee {
+      name
+    }
+  }
+  ```
+  """
   following: [Follower!]! @derivedFrom(field: "account")
 
+  """
+  List of peeps by this account
+  """
   peeps: [Peep!]! @derivedFrom(field: "account")
 
+  """
+  Number of the ethereum block this account was created in
+  """
   createdInBlock: Int!
+
+  """
+  Hash of the ethereum transation this account was created in
+  """
   createdInTx: Bytes!
+
+  """
+  Timestamp of the transaction this account was created in
+  """
   createdTimestamp: Int!
+
+  """
+  Number of the ethereum block this account was last updated in
+  """
   updatedInBlock: Int
+
+  """
+  Hash of the ethereum transaction this account was last updated in
+  """
   updatedInTx: Bytes
+
+  """
+  Timestamp of the transaction this account was last updated in
+  """
   updatedTimestamp: Int
 }
 
+"""
+A follower connects two accounts in a directed fashion.
+It persists the information of an account following an followee-account.
+"""
 type Follower @entity {
+  """
+  A combination of the two account IDs
+  """
   id: ID!
+
+  """
+  The account being followed
+  """
   followee: Account!
+
+  """
+  The account that is following
+  """
   account: Account!
+
+  """
+  Timestamp when the follow action occurred
+  """
   timestamp: Int!
 
+  """
+  Number of the ethereum block this follow action ocurred
+  """
   createdInBlock: Int!
+
+  """
+  Hash of the ethereum transaction this follow action ocurred
+  """
   createdInTx: Bytes!
+
+  """
+  Timestamp of the transaction this follow action ocurred
+  """
   createdTimestamp: Int!
 }
 
+"""
+Type of a peep to distinguish replies, shared peeps and regular peeps
+"""
 enum PeepType {
+  """
+  A regular peep
+  """
   PEEP
+  """
+  A peep sharing another peep
+  """
   SHARE
+  """
+  A peep as a reply to another peep
+  """
   REPLY
 }
 
+"""
+A post made on the Peepeth social network
+"""
 type Peep @entity {
+  """
+  The Peep ID is the IPFS hash from where the data was retrieved
+  """
   id: ID!
+
+  """
+  Peeps are numbered in the order they are processed
+  """
   number: Int!
+
+  """
+  Type of the peep, allows to distinguish between regular peeps,
+  peeps that share another peep, and replies to other peeps
+  """
   type: PeepType!
+
+  """
+  The content (message) of the peep
+  """
   content: String!
+
+  """
+  A picture associated to the peep
+  """
   pic: String
+
+  """
+  The author of the peep
+  """
   account: Account
+
+  """
+  Timestamp when the peep was created
+  """
   timestamp: Int!
 
+  """
+  The peep shared by this peep. This is null in case this is not of type=SHARE
+  """
   share: Peep
+
+  """
+  The peep which this peep is the reply to. Thi is null in case this is not of type=REPLY
+  """
   replyTo: Peep
+
+  """
+  List of all reply-peeps to this peep
+  """
   replies: [Peep!]! @derivedFrom(field: "replyTo")
 
+  """
+  Number of the ethereum block this peep was created in
+  """
   createdInBlock: Int!
+
+  """
+  Hash of the ethereum transation this peep was created in
+  """
   createdInTx: Bytes!
+
+  """
+  Timestamp of the transaction this peep was created in
+  """
   createdTimestamp: Int!
 }
 

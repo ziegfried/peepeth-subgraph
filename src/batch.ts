@@ -8,6 +8,8 @@ import { verifySignature } from './signature';
 import { TransactionInfo } from './transaction';
 import { asArray, asObject, asString, intValue } from './util';
 
+// Common keys in various batch-related JSON documents
+
 let KEY_BATCH_SAVE_JSON = 'batchSaveJSON';
 let KEY_PEEP = 'peep';
 let KEY_UNTRUSTED_TIMESTAMP = 'untrustedTimestamp';
@@ -21,6 +23,15 @@ let KEY_ACCOUNT_UPDATE = 'accountUpdate';
 let KEY_SIGNED_ACTIONS = 'signedActions';
 let KEY_SIGNED_BATCH = 'userSignedBatch';
 
+/**
+ * Creates a new transaction info where the `from` address is assigned
+ * an address if the signature can be sucessfully verified to originate from that
+ * wallet address.
+ *
+ * Passing the resuling transaction info to other methods (such as createPeep) allows
+ * us to assiciate stored object with that wallet address as if the transaction was
+ * created by that wallet.
+ */
 function assumeSignedSender(
   signedObject: TypedMap<string, JSONValue>,
   ipfsHash: string,
@@ -48,6 +59,11 @@ function assumeSignedSender(
   return null;
 }
 
+/**
+ * Determines if the given JSON object contains a new peep.
+ * If it does it goes ahead and creates that new peep and returns `true`.
+ * Otherwise it returns `false`.
+ */
 function processPeep(
   batchObj: TypedMap<string, JSONValue> | null,
   tx: TransactionInfo,
@@ -71,6 +87,11 @@ function processPeep(
   return false;
 }
 
+/**
+ * Determines if the given JSON object contains follow action information.
+ * If it does it goes ahead and creates that new follower and returns `true`.
+ * Otherwise it returns `false`.
+ */
 function processFollow(batchObj: TypedMap<string, JSONValue> | null, tx: TransactionInfo): boolean {
   let followObj = asObject(batchObj.get(KEY_FOLLOW));
   if (followObj != null) {
@@ -84,6 +105,11 @@ function processFollow(batchObj: TypedMap<string, JSONValue> | null, tx: Transac
   return false;
 }
 
+/**
+ * Determines if the given JSON object contains unfollow action information.
+ * If it does it goes ahead and removes that follower and returns `true`.
+ * Otherwise it returns `false`.
+ */
 function processUnfollow(batchObj: TypedMap<string, JSONValue> | null, tx: TransactionInfo): boolean {
   let followObj = asObject(batchObj.get(KEY_UNFOLLOW));
   if (followObj != null) {
@@ -96,6 +122,11 @@ function processUnfollow(batchObj: TypedMap<string, JSONValue> | null, tx: Trans
   return false;
 }
 
+/**
+ * Determines if the given JSON object contains account update information.
+ * If it does it goes ahead and updates the account and returns `true`.
+ * Otherwise it returns `false`.
+ */
 function processAccountUpdate(batchObj: TypedMap<string, JSONValue> | null, tx: TransactionInfo): boolean {
   let updateObj = asObject(batchObj.get(KEY_ACCOUNT_UPDATE));
   if (updateObj != null) {
@@ -108,15 +139,24 @@ function processAccountUpdate(batchObj: TypedMap<string, JSONValue> | null, tx: 
   return false;
 }
 
+/**
+ * Determines if the given JSON object contains love action information.
+ * Returns `true` if it does, otherwise it returns `false`.
+ */
 function processLove(batchObj: TypedMap<string, JSONValue> | null, tx: TransactionInfo): boolean {
   let loveObj = asObject(batchObj.get(KEY_LOVE));
   if (loveObj != null) {
-    // ignore for now, TODO
+    // Ignoring love actions for now. Maybe we'll add support for it in the future.
     return true;
   }
   return false;
 }
 
+/**
+ * Attempts to provess the given batch item (which can be a peep, follow, unfollow, etc).
+ * Returns `true` if the item was processed, otherwise `false` if the item could not be
+ * recognized and was ignored.
+ */
 function processBatchItem(batchObj: TypedMap<string, JSONValue>, tx: TransactionInfo): boolean {
   let processed =
     processPeep(batchObj, tx, false) ||
@@ -135,6 +175,10 @@ function processBatchItem(batchObj: TypedMap<string, JSONValue>, tx: Transaction
   return processed;
 }
 
+/**
+ * Attempts to process the given JSON object as a batch of actions. Returns `true` if
+ * in fact it was a batch of actions, `false` if it wasn't.
+ */
 function processBatchJSON(data: TypedMap<string, JSONValue>, tx: TransactionInfo): boolean {
   let batchData = asArray(data.get(KEY_BATCH_SAVE_JSON));
   if (batchData != null) {
@@ -154,6 +198,10 @@ function processBatchJSON(data: TypedMap<string, JSONValue>, tx: TransactionInfo
   return false;
 }
 
+/**
+ * Attempts to process the given JSON object as a batch of signed actions. Returns `true` if
+ * in fact it was a batch of signed actions, `false` if it wasn't.
+ */
 function processUserSignedBatch(data: TypedMap<string, JSONValue>, tx: TransactionInfo): boolean {
   let signedBatch = asObject(data.get(KEY_SIGNED_BATCH));
   if (signedBatch != null) {
@@ -170,6 +218,10 @@ function processUserSignedBatch(data: TypedMap<string, JSONValue>, tx: Transacti
   return false;
 }
 
+/**
+ * Attempts to process the given JSON object as a batch of signed actions. Returns `true` if
+ * in fact it was a batch of signed actions, `false` if it wasn't.
+ */
 function processSignedActions(data: TypedMap<string, JSONValue>, tx: TransactionInfo): boolean {
   let signedActions = asArray(data.get(KEY_SIGNED_ACTIONS));
   if (signedActions != null) {
@@ -190,6 +242,7 @@ function processSignedActions(data: TypedMap<string, JSONValue>, tx: Transaction
   return false;
 }
 
+/** Creates a string containing comma-separated keys of the JSON object for debug logging */
 function objectKeys(obj: TypedMap<string, JSONValue>): string {
   let result = '';
   for (let i = 0, len = obj.entries.length; i < len; i++) {
@@ -201,6 +254,7 @@ function objectKeys(obj: TypedMap<string, JSONValue>): string {
   return result;
 }
 
+/** Loads a batch JSON document from IPFS and processes the actions it contains (signed or unsigned) */
 function processBatch(ipfsHash: string, tx: TransactionInfo): void {
   let data = loadFromIpfs(ipfsHash, tx);
   if (data != null) {
@@ -214,6 +268,7 @@ function processBatch(ipfsHash: string, tx: TransactionInfo): void {
   }
 }
 
+/** Handles calls to `saveBatch(string)` */
 export function handleSaveBatch(call: SaveBatchCall): void {
   let ipfsHash = call.inputs._ipfsHash;
   let tx = TransactionInfo.fromEthereumCall(call);

@@ -1,4 +1,5 @@
 /// <reference path="../node_modules/assemblyscript/index.d.ts" />
+// Declare some assembly-script built-in types to avoid errors in VSCode
 type i8 = number;
 type u8 = number;
 type i16 = number;
