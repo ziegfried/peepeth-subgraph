@@ -52,7 +52,7 @@ const Accounts: React.FC<Props> = ({ selectedAccount, onSelectAccount }) => {
       fetchMore={() =>
         fetchMore({
           variables: { offset: data.accounts.length },
-          updateQuery: (prev, { fetchMoreResult }) => {
+          updateQuery: (prev: any, { fetchMoreResult }) => {
             if (!fetchMoreResult) return prev;
             return Object.assign({}, prev, {
               accounts: [...prev.accounts, ...fetchMoreResult.accounts],
