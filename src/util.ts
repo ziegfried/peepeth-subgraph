@@ -1,4 +1,3 @@
-/// <reference path="./asm.d.ts" />
 import { Bytes, JSONValue, JSONValueKind, TypedMap } from '@graphprotocol/graph-ts';
 
 /**
@@ -75,4 +74,23 @@ export function isValidUtf8(bytes: Bytes): boolean {
     pending -= 1;
   }
   return pending === 0;
+}
+
+export function kindToString(kind: JSONValueKind): string {
+  switch (kind) {
+    case JSONValueKind.ARRAY:
+      return 'ARRAY';
+    case JSONValueKind.OBJECT:
+      return 'OBJECT';
+    case JSONValueKind.STRING:
+      return 'STRING';
+    case JSONValueKind.NUMBER:
+      return 'NUMBER';
+    case JSONValueKind.BOOL:
+      return 'BOOL';
+    case JSONValueKind.NULL:
+      return 'NULL';
+    default:
+      return '?';
+  }
 }

@@ -1,6 +1,5 @@
-/// <reference path="./asm.d.ts" />
 import { JSONValue, log, TypedMap } from '@graphprotocol/graph-ts';
-import { PostCall, ReplyCall, ShareCall } from '../generated/Contract/Contract';
+import { PostCall, ReplyCall, ShareCall } from '../generated/PeepethContract/PeepethContract';
 import { Peep } from '../generated/schema';
 import { getGlobalStats } from './global';
 import { asString, intValue } from './util';
@@ -27,7 +26,12 @@ export function createPeep(data: TypedMap<string, JSONValue>, id: string, tx: Tr
     let peep = new Peep(id);
     peep.number = incrementNumberOfPeeps();
     peep.account = tx.from.toHex();
-    peep.content = asString(data.get('content'));
+    let content = asString(data.get('content'));
+    if (content == null) {
+      peep.content = '';
+    } else {
+      peep.content = content;
+    }
     peep.pic = asString(data.get('pic'));
     peep.timestamp = intValue(data, 'untrustedTimestamp', 0);
     peep.type = 'PEEP';
@@ -50,7 +54,11 @@ export function createPeep(data: TypedMap<string, JSONValue>, id: string, tx: Tr
 
     return peep;
   } else {
-    log.warning('[mapping] Ignoring invalid peep of type={} in tx={}', [type, tx.hash.toHex()]);
+    let typeString = type;
+    if (typeString == null) {
+      typeString = '<null>';
+    }
+    log.warning('[mapping] Ignoring invalid peep of type={} in tx={}', [typeString, tx.hash.toHex()]);
   }
   return null;
 }
