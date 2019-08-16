@@ -1,12 +1,12 @@
 import { Address, JSONValue, log, TypedMap } from '@graphprotocol/graph-ts';
-import { SaveBatchCall } from '../generated/Contract/Contract';
-import { updateAccount } from './account';
+import { SaveBatchCall } from '../generated/PeepethContract/PeepethContract';
+import { updateAccount, createAccount } from './account';
 import { addNewFollower, removeFollower } from './follow';
 import { loadFromIpfs } from './ipfs';
 import { createPeepFromIPFS } from './peep';
 import { verifySignature } from './signature';
 import { TransactionInfo } from './transaction';
-import { asArray, asObject, asString, intValue } from './util';
+import { asArray, asObject, asString, intValue, kindToString } from './util';
 
 // Common keys in various batch-related JSON documents
 
@@ -19,6 +19,9 @@ let KEY_FOLLOW = 'follow';
 let KEY_UNFOLLOW = 'unfollow';
 let KEY_FOLLOWEE = 'followee';
 let KEY_LOVE = 'love';
+let KEY_SIGNED_ACCOUNT = 'signedAccount';
+let KEY_ENABLE_DELEGATE = 'enableDelegate';
+let KEY_DISABLE_DELEGATE = 'disableDelegate';
 let KEY_ACCOUNT_UPDATE = 'accountUpdate';
 let KEY_SIGNED_ACTIONS = 'signedActions';
 let KEY_SIGNED_BATCH = 'userSignedBatch';
@@ -35,10 +38,25 @@ let KEY_SIGNED_BATCH = 'userSignedBatch';
 function assumeSignedSender(
   signedObject: TypedMap<string, JSONValue>,
   ipfsHash: string,
-  tx: TransactionInfo
+  tx: TransactionInfo,
+  signatureRequired: boolean
 ): TransactionInfo | null {
   let address = asString(signedObject.get('address'));
   let signature = asString(signedObject.get('signature'));
+  if (address == null || signature == null) {
+    if (signatureRequired) {
+      log.warning('[mapping] [assumeSigned] unable to assume signed sender, address={} or signature={}', [
+        address != null ? address : 'null',
+        signature != null ? signature : 'null',
+      ]);
+      // Return turn null, signalling the signature verification failed
+      return null;
+    } else {
+      // Return original transaction info if signature is not required in this
+      // particular action and signature into not present in the JSON object
+      return tx;
+    }
+  }
   log.info('[mapping] [assumeSigned] user signed object ipfs={} address={} signature={} in {}', [
     ipfsHash,
     address,
@@ -56,6 +74,7 @@ function assumeSignedSender(
     return txInfo;
   }
 
+  // Invalid signature
   return null;
 }
 
@@ -64,23 +83,19 @@ function assumeSignedSender(
  * If it does it goes ahead and creates that new peep and returns `true`.
  * Otherwise it returns `false`.
  */
-function processPeep(
-  batchObj: TypedMap<string, JSONValue> | null,
-  tx: TransactionInfo,
-  signed: boolean
-): boolean {
+function processPeep(batchObj: TypedMap<string, JSONValue>, tx: TransactionInfo, signed: boolean): boolean {
   let peepObj = asObject(batchObj.get(KEY_PEEP));
   if (peepObj != null) {
     let ipfsHash = asString(peepObj.get(KEY_IPFS));
     if (ipfsHash != null) {
-      let txInfo: TransactionInfo | null = tx;
-      if (signed && peepObj.isSet('signature')) {
-        txInfo = assumeSignedSender(peepObj!, ipfsHash, tx!);
+      let effectiveTx: TransactionInfo | null = tx;
+      if (signed) {
+        effectiveTx = assumeSignedSender(peepObj!, ipfsHash, tx!, false);
+        if (effectiveTx == null) {
+          return true;
+        }
       }
-      if (txInfo == null) {
-        return true;
-      }
-      createPeepFromIPFS(ipfsHash, KEY_SAVE_BATCH, txInfo!);
+      createPeepFromIPFS(ipfsHash, KEY_SAVE_BATCH, effectiveTx!);
     }
     return true;
   }
@@ -92,7 +107,7 @@ function processPeep(
  * If it does it goes ahead and creates that new follower and returns `true`.
  * Otherwise it returns `false`.
  */
-function processFollow(batchObj: TypedMap<string, JSONValue> | null, tx: TransactionInfo): boolean {
+function processFollow(batchObj: TypedMap<string, JSONValue>, tx: TransactionInfo): boolean {
   let followObj = asObject(batchObj.get(KEY_FOLLOW));
   if (followObj != null) {
     let followee = asString(followObj.get(KEY_FOLLOWEE));
@@ -110,7 +125,7 @@ function processFollow(batchObj: TypedMap<string, JSONValue> | null, tx: Transac
  * If it does it goes ahead and removes that follower and returns `true`.
  * Otherwise it returns `false`.
  */
-function processUnfollow(batchObj: TypedMap<string, JSONValue> | null, tx: TransactionInfo): boolean {
+function processUnfollow(batchObj: TypedMap<string, JSONValue>, tx: TransactionInfo): boolean {
   let followObj = asObject(batchObj.get(KEY_UNFOLLOW));
   if (followObj != null) {
     let followee = asString(followObj.get(KEY_FOLLOWEE));
@@ -127,13 +142,68 @@ function processUnfollow(batchObj: TypedMap<string, JSONValue> | null, tx: Trans
  * If it does it goes ahead and updates the account and returns `true`.
  * Otherwise it returns `false`.
  */
-function processAccountUpdate(batchObj: TypedMap<string, JSONValue> | null, tx: TransactionInfo): boolean {
+function processAccountUpdate(
+  batchObj: TypedMap<string, JSONValue>,
+  tx: TransactionInfo,
+  signed: boolean
+): boolean {
   let updateObj = asObject(batchObj.get(KEY_ACCOUNT_UPDATE));
   if (updateObj != null) {
     let ipfsHash = asString(updateObj.get(KEY_IPFS));
     if (ipfsHash != null) {
-      updateAccount(tx.from.toHex(), tx, ipfsHash);
+      let effectiveTx: TransactionInfo | null = tx;
+      if (signed) {
+        effectiveTx = assumeSignedSender(updateObj!, ipfsHash, tx!, false);
+        if (effectiveTx == null) {
+          log.warning(
+            '[mapping] [processAccountUpdate] ignoring account update from ipfs hash={} tx={} - could not verify signature',
+            [ipfsHash, tx.toString()]
+          );
+
+          return true;
+        }
+      }
+      updateAccount(tx.from.toHex(), effectiveTx!, ipfsHash);
     }
+    return true;
+  }
+  return false;
+}
+
+function processSignedAccount(batchObj: TypedMap<string, JSONValue>, tx: TransactionInfo): boolean {
+  let accountObj = asObject(batchObj.get(KEY_SIGNED_ACCOUNT));
+  if (accountObj != null) {
+    let ipfsHash = asString(accountObj.get(KEY_IPFS));
+    if (ipfsHash != null) {
+      let effectiveTx: TransactionInfo | null = assumeSignedSender(accountObj!, ipfsHash, tx!, false);
+      if (effectiveTx == null) {
+        log.warning(
+          '[mapping] [processSignedAccount] ignoring signed account from ipfs hash={} tx={} - could not verify signature',
+          [ipfsHash, tx.toString()]
+        );
+        return true;
+      }
+      createAccount(null, effectiveTx!, ipfsHash);
+    }
+    return true;
+  }
+  return false;
+}
+
+function processEnableDelegate(batchObj: TypedMap<string, JSONValue>, tx: TransactionInfo): boolean {
+  let delegateObj = asObject(batchObj.get(KEY_ENABLE_DELEGATE));
+  if (delegateObj != null) {
+    // log.debug('[mapping] [enableDelegate] ignorign');
+    // TODO
+    return true;
+  }
+  return false;
+}
+
+function processDisableDelegate(batchObj: TypedMap<string, JSONValue>, tx: TransactionInfo): boolean {
+  let delegateObj = asObject(batchObj.get(KEY_DISABLE_DELEGATE));
+  if (delegateObj != null) {
+    // TODO
     return true;
   }
   return false;
@@ -143,7 +213,7 @@ function processAccountUpdate(batchObj: TypedMap<string, JSONValue> | null, tx: 
  * Determines if the given JSON object contains love action information.
  * Returns `true` if it does, otherwise it returns `false`.
  */
-function processLove(batchObj: TypedMap<string, JSONValue> | null, tx: TransactionInfo): boolean {
+function processLove(batchObj: TypedMap<string, JSONValue>, tx: TransactionInfo): boolean {
   let loveObj = asObject(batchObj.get(KEY_LOVE));
   if (loveObj != null) {
     // Ignoring love actions for now. Maybe we'll add support for it in the future.
@@ -153,7 +223,7 @@ function processLove(batchObj: TypedMap<string, JSONValue> | null, tx: Transacti
 }
 
 /**
- * Attempts to provess the given batch item (which can be a peep, follow, unfollow, etc).
+ * Attempts to process the given batch item (which can be a peep, follow, unfollow, etc).
  * Returns `true` if the item was processed, otherwise `false` if the item could not be
  * recognized and was ignored.
  */
@@ -163,7 +233,7 @@ function processBatchItem(batchObj: TypedMap<string, JSONValue>, tx: Transaction
     processFollow(batchObj, tx) ||
     processUnfollow(batchObj, tx) ||
     processLove(batchObj, tx) ||
-    processAccountUpdate(batchObj, tx);
+    processAccountUpdate(batchObj, tx, false);
 
   if (!processed) {
     log.warning('[mapping] [batchItem] Unhandled batch obj keys={} in {}', [
@@ -188,7 +258,7 @@ function processBatchJSON(data: TypedMap<string, JSONValue>, tx: TransactionInfo
         processBatchItem(batchObj!, tx);
       } else {
         log.warning('[mapping] [batchItem] Batch entry is not an object instead saw kind={} in {}', [
-          batchData![i].kind.toString(),
+          kindToString(batchData![i].kind),
           tx.toString(),
         ]);
       }
@@ -208,7 +278,7 @@ function processUserSignedBatch(data: TypedMap<string, JSONValue>, tx: Transacti
     let ipfsHash = asString(signedBatch.get(KEY_IPFS));
 
     if (ipfsHash != null) {
-      let txInfo = assumeSignedSender(signedBatch!, ipfsHash, tx);
+      let txInfo = assumeSignedSender(signedBatch!, ipfsHash, tx, true);
       if (txInfo != null) {
         processBatch(ipfsHash, txInfo!);
       }
@@ -228,7 +298,14 @@ function processSignedActions(data: TypedMap<string, JSONValue>, tx: Transaction
     for (let i = 0, len = signedActions.length; i < len; i++) {
       let obj = asObject(signedActions![i]);
       if (obj != null) {
-        let processed = processUserSignedBatch(obj!, tx) || processPeep(obj, tx, true);
+        let processed =
+          processUserSignedBatch(obj!, tx) ||
+          processSignedAccount(obj!, tx) ||
+          processAccountUpdate(obj!, tx, true) ||
+          processEnableDelegate(obj!, tx) ||
+          processDisableDelegate(obj!, tx) ||
+          processPeep(obj!, tx, true) ||
+          processLove(obj!, tx);
         if (!processed) {
           log.warning('[mapping] [signedAction] Unable to process signed action with keys={} in {}', [
             objectKeys(obj!),

@@ -1,6 +1,5 @@
-/// <reference path="./asm.d.ts" />
 import { store } from '@graphprotocol/graph-ts';
-import { FollowCall, UnFollowCall } from '../generated/Contract/Contract';
+import { FollowCall, UnFollowCall } from '../generated/PeepethContract/PeepethContract';
 import { Follower, Account } from '../generated/schema';
 import { TransactionInfo } from './transaction';
 

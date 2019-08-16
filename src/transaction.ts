@@ -1,4 +1,3 @@
-/// <reference path="./asm.d.ts" />
 import { Bytes, Address, EthereumCall, Value } from '@graphprotocol/graph-ts';
 
 /**
@@ -6,7 +5,7 @@ import { Bytes, Address, EthereumCall, Value } from '@graphprotocol/graph-ts';
  */
 export class State {
   /** Number of IPFS.cat calls made so far */
-  ipfsReqs: i32 = 0;
+  ipfsReqs: u32 = 0;
 }
 
 /**

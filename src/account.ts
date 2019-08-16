@@ -1,4 +1,4 @@
-import { log, store } from '@graphprotocol/graph-ts';
+import { log, store, TypedMap, JSONValue } from '@graphprotocol/graph-ts';
 import { getGlobalStats } from './global';
 import { loadFromIpfs } from './ipfs';
 import { TransactionInfo } from './transaction';
@@ -9,12 +9,16 @@ import {
   CreateAccountCall,
   TransferAccountCall,
   UpdateAccountCall,
-} from '../generated/Contract/Contract';
+} from '../generated/PeepethContract/PeepethContract';
 
 /**
  * Loads account information from IPFS and applies it to the given account instance
  */
-function loadAccountInfoFromIpfs(account: Account, ipfsHash: string, tx: TransactionInfo): void {
+function loadAccountInfoFromIpfs(
+  account: Account,
+  ipfsHash: string,
+  tx: TransactionInfo
+): TypedMap<string, JSONValue> | null {
   account.ipfsHash = ipfsHash;
   let infoObj = loadFromIpfs(ipfsHash, tx);
   if (infoObj !== null) {
@@ -25,9 +29,11 @@ function loadAccountInfoFromIpfs(account: Account, ipfsHash: string, tx: Transac
     account.avatarUrl = asString(infoObj.get('avatarUrl'));
     account.backgroundUrl = asString(infoObj.get('backgroundUrl'));
     account.messageToWorld = asString(infoObj.get('messageToWorld'));
+    return infoObj;
   } else {
     log.warning('[mapping] Unable to load account info from IPFS hash={}', [ipfsHash]);
   }
+  return null;
 }
 
 function applyAccountCreationInfo(account: Account, tx: TransactionInfo): void {
@@ -40,6 +46,28 @@ function applyAccountUpdateInfo(account: Account, tx: TransactionInfo): void {
   account.updatedInBlock = tx.blockNumber;
   account.updatedInTx = tx.hash;
   account.updatedTimestamp = tx.timestamp;
+}
+
+export function createAccount(name: string | null, tx: TransactionInfo, ipfsHash: string): void {
+  let account = new Account(tx.from.toHex());
+  applyAccountCreationInfo(account, tx);
+  let infoObj = loadAccountInfoFromIpfs(account, ipfsHash, tx);
+
+  if (name != null) {
+    account.name = name;
+  } else if (infoObj != null) {
+    let provisionalName = asString(infoObj.get('provisionalName'));
+    if (provisionalName != null) {
+      account.name = provisionalName;
+    }
+  }
+
+  let globalStats = getGlobalStats();
+  globalStats.numberOfAccounts += 1;
+  globalStats.save();
+
+  account.number = globalStats.numberOfAccounts;
+  account.save();
 }
 
 /**
@@ -60,25 +88,15 @@ export function updateAccount(id: string, tx: TransactionInfo, ipfsHash: string)
 
 /** Handler function for `createAccount(bytes16, string)` calls */
 export function handleCreateAccount(call: CreateAccountCall): void {
-  let account = new Account(call.transaction.from.toHex());
   let txInfo = TransactionInfo.fromEthereumCall(call);
-  applyAccountCreationInfo(account, txInfo);
-
+  let name: string;
   // Check if name is valid UTF-8 string, since subgraph fails otherwise
   if (isValidUtf8(call.inputs._name)) {
-    account.name = call.inputs._name.toString();
+    name = call.inputs._name.toString();
   } else {
-    account.name = '#INVALID#<' + call.inputs._name.toHexString() + '>';
+    name = '#INVALID#<' + call.inputs._name.toHexString() + '>';
   }
-
-  loadAccountInfoFromIpfs(account, call.inputs._ipfsHash, txInfo);
-
-  let globalStats = getGlobalStats();
-  globalStats.numberOfAccounts += 1;
-  globalStats.save();
-
-  account.number = globalStats.numberOfAccounts;
-  account.save();
+  createAccount(name, txInfo, call.inputs._ipfsHash);
 }
 
 /** Handler function for `updateAccount(string)` calls */
@@ -102,8 +120,8 @@ export function handleChangeName(call: ChangeNameCall): void {
       account.name = '#INVALID#<' + call.inputs._name.toHexString() + '>';
     }
     applyAccountUpdateInfo(account!, tx);
+    account.save();
   }
-  account.save();
 }
 
 /**

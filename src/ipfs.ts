@@ -1,6 +1,5 @@
-/// <reference path="./asm.d.ts" />
 import { ipfs, json, JSONValue, JSONValueKind, log, TypedMap } from '@graphprotocol/graph-ts';
-import { asObject } from './util';
+import { asObject, kindToString } from './util';
 import { TransactionInfo } from './transaction';
 
 /**
@@ -28,7 +27,7 @@ export function loadFromIpfs(ifpsHash: string, tx: TransactionInfo): TypedMap<st
     }
     if (data.kind !== JSONValueKind.OBJECT) {
       log.debug('[mapping] [loadIpfs] JSON data from IPFS is of type={}, expected OBJECT in {}', [
-        data.kind.toString(),
+        kindToString(data.kind),
         tx.toString(),
       ]);
     }
