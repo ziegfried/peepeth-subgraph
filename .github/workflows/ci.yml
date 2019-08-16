@@ -3,6 +3,19 @@ name: CI
 on: [push]
 
 jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: Setup Node.js
+        uses: actions/setup-node@v1
+        with:
+          node-version: 12.x
+      - name: Install dependencies
+        run: yarn install
+      - name: Check Format
+        run: yarn prettier --check '**/*.ts' '**/*.tsx' '**/*.md' '**/*.js' '**/*.jsx'
+
   subgraph:
     runs-on: ubuntu-latest
     strategy:
